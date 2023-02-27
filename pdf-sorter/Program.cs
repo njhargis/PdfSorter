@@ -42,7 +42,7 @@ if (filesInBucket != null && filesInBucket.Any())
             ProcessedZip processedZip;
             if (alreadyProcessed.Select(a => a.FileName).Contains(zipPath[(zipPath.LastIndexOf('/') + 1)..]))
             {
-                processedZip = alreadyProcessed.Where(a => a.FileName == zipPath[(zipPath.LastIndexOf('/') + 1)..])).FirstOrDefault();
+                processedZip = alreadyProcessed.Where(a => a.FileName == zipPath[(zipPath.LastIndexOf('/') + 1)..]).FirstOrDefault();
             }
             else
             {
