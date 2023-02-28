@@ -20,8 +20,8 @@ PDF Sorter is a C#/.NET Codebase that:
 
 ## Reference Materials
 [AWS SDK S3 Examples](https://docs.aws.amazon.com/sdk-for-net/v3/developer-guide/csharp_s3_code_examples.html)  
-[Serilog](https://serilog.net/)
-[CsvHelper](https://joshclose.github.io/CsvHelper/)
+[Serilog](https://serilog.net/)  
+[CsvHelper](https://joshclose.github.io/CsvHelper/)  
 [.NET Core Configuration](https://learn.microsoft.com/en-us/dotnet/core/extensions/configuration)  
 [SQLite](https://www.sqlite.org/index.html)  
 [User Secrets Guide](https://learn.microsoft.com/en-us/aspnet/core/security/app-secrets?view=aspnetcore-7.0&tabs=windows#secret-manager)  
