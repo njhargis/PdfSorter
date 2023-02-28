@@ -3,15 +3,9 @@ using Amazon.S3;
 using CsvHelper.Configuration;
 using Microsoft.Extensions.Configuration;
 using PdfSorter.AWS;
-using PdfSorter.Data;
 using Serilog;
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace PdfSorter
 {
@@ -42,7 +36,7 @@ namespace PdfSorter
 
             // Suppressing these null reference warnings, as GetRequiredSection will throw an exception if they are null.
             DatabaseFileName = config.GetRequiredSection("DatabaseFileName").Value;
-            
+
             AwsInfo = config.GetRequiredSection("AWSInfo").Get<AWSInfo>();
             RegionEndpoint newRegion = RegionEndpoint.GetBySystemName(AwsInfo.Region);
             AmazonS3Client s3Client = new(AwsInfo.AccessKeyId, AwsInfo.Secret, newRegion);

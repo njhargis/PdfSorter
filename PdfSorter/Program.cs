@@ -99,10 +99,10 @@ if (filesInBucket != null && filesInBucket.Any())
     List<string>? downloadedZipPaths = Directory.GetFiles(path).Where(f => f.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)).ToList();
 
     if (downloadedZipPaths != null && downloadedZipPaths.Any())
-    { 
+    {
         foreach (string zipPath in downloadedZipPaths)
         {
-            try 
+            try
             {
                 ProcessedZip processedZip = await CreateOrUpdateZipFile(zipPath, alreadyProcessedZips, processEvent, context);
 
@@ -182,8 +182,8 @@ if (filesInBucket != null && filesInBucket.Any())
             {
                 Log.Error($"Something went wrong processing {zipPath}", ex);
             }
+        }
     }
-}
 }
 
 // Cleanup.

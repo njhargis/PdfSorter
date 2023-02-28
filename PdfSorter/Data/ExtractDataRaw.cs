@@ -1,6 +1,4 @@
-﻿using CsvHelper.Configuration.Attributes;
-
-namespace PdfSorter.Data
+﻿namespace PdfSorter.Data
 {
 
     /// <summary>
@@ -11,9 +9,9 @@ namespace PdfSorter.Data
     public class ExtractDataRaw
     {
         public string Id { get; set; } = string.Empty;
-        
+
         public string ClaimNumber { get; set; } = string.Empty;
-        
+
         public string ClaimDate { get; set; } = string.Empty;
 
         public string OpenAmount { get; set; } = string.Empty;

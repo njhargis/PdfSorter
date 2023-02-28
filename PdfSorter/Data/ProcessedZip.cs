@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace PdfSorter.Data
+﻿namespace PdfSorter.Data
 {
     public class ProcessedZip
     {
@@ -15,8 +13,8 @@ namespace PdfSorter.Data
         // This ensures if you have not initialized the parent due to data access strategy you cannot attempt to access said parent.
         // https://learn.microsoft.com/en-us/ef/core/miscellaneous/nullable-reference-types#required-navigation-properties
         private ProcessEvent? _originalProcessEvent;
-        public ProcessEvent OriginalProcessEvent 
-        {  
+        public ProcessEvent OriginalProcessEvent
+        {
             set => _originalProcessEvent = value;
             get => _originalProcessEvent ?? throw new InvalidOperationException("Uninitialized property: " + nameof(OriginalProcessEvent));
         }

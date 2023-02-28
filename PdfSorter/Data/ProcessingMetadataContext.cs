@@ -18,11 +18,11 @@ namespace PdfSorter.Data
         // The following configures EF to connect to the Sqlite database file in the
         // passed in path from constructor.
         protected override void OnConfiguring(DbContextOptionsBuilder options)
-        { 
+        {
             options.UseSqlite($"Data Source={DbPath};Pooling=False");
 
         }
-        
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<ProcessedZip>()

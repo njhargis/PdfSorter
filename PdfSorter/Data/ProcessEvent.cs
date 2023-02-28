@@ -1,6 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-
-namespace PdfSorter.Data
+﻿namespace PdfSorter.Data
 {
     public class ProcessEvent
     {

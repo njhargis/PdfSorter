@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace PdfSorter.Exceptions
+﻿namespace PdfSorter.Exceptions
 {
     internal class PdfSorterSetupFailedException : Exception
     {
         internal PdfSorterSetupFailedException()
-        { 
+        {
         }
 
         internal PdfSorterSetupFailedException(string message)
@@ -18,7 +12,7 @@ namespace PdfSorter.Exceptions
         }
 
         internal PdfSorterSetupFailedException(string message, Exception inner)
-            : base(message, inner) 
+            : base(message, inner)
         {
         }
     }
