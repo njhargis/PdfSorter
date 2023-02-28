@@ -2,22 +2,25 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using pdf_sorter.Data;
+using PdfSorter.Data;
 
 #nullable disable
 
-namespace pdf_sorter.Migrations
+namespace PdfSorter.Migrations
 {
     [DbContext(typeof(ProcessingMetadataContext))]
-    partial class ProcessingMetadataContextModelSnapshot : ModelSnapshot
+    [Migration("20230227012402_Init")]
+    partial class Init
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.3");
 
-            modelBuilder.Entity("pdf_sorter.Data.ProcessEvent", b =>
+            modelBuilder.Entity("PdfSorter.Data.ProcessEvent", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -34,7 +37,7 @@ namespace pdf_sorter.Migrations
                     b.ToTable("ProcessEvents");
                 });
 
-            modelBuilder.Entity("pdf_sorter.Data.ProcessedFile", b =>
+            modelBuilder.Entity("PdfSorter.Data.ProcessedFile", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -60,7 +63,7 @@ namespace pdf_sorter.Migrations
                     b.ToTable("ProcessedFiles");
                 });
 
-            modelBuilder.Entity("pdf_sorter.Data.ProcessedZip", b =>
+            modelBuilder.Entity("PdfSorter.Data.ProcessedZip", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -83,9 +86,9 @@ namespace pdf_sorter.Migrations
                     b.ToTable("ProcessedZips");
                 });
 
-            modelBuilder.Entity("pdf_sorter.Data.ProcessedFile", b =>
+            modelBuilder.Entity("PdfSorter.Data.ProcessedFile", b =>
                 {
-                    b.HasOne("pdf_sorter.Data.ProcessedZip", "ProcessedZip")
+                    b.HasOne("PdfSorter.Data.ProcessedZip", "ProcessedZip")
                         .WithMany("ProcessedFiles")
                         .HasForeignKey("ProcessedZipId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -94,9 +97,9 @@ namespace pdf_sorter.Migrations
                     b.Navigation("ProcessedZip");
                 });
 
-            modelBuilder.Entity("pdf_sorter.Data.ProcessedZip", b =>
+            modelBuilder.Entity("PdfSorter.Data.ProcessedZip", b =>
                 {
-                    b.HasOne("pdf_sorter.Data.ProcessEvent", "ProcessEvent")
+                    b.HasOne("PdfSorter.Data.ProcessEvent", "ProcessEvent")
                         .WithMany("ProcessedZips")
                         .HasForeignKey("ProcessEventId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -105,12 +108,12 @@ namespace pdf_sorter.Migrations
                     b.Navigation("ProcessEvent");
                 });
 
-            modelBuilder.Entity("pdf_sorter.Data.ProcessEvent", b =>
+            modelBuilder.Entity("PdfSorter.Data.ProcessEvent", b =>
                 {
                     b.Navigation("ProcessedZips");
                 });
 
-            modelBuilder.Entity("pdf_sorter.Data.ProcessedZip", b =>
+            modelBuilder.Entity("PdfSorter.Data.ProcessedZip", b =>
                 {
                     b.Navigation("ProcessedFiles");
                 });

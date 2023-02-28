@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net7.0</TargetFramework>
-    <RootNamespace>pdf_sorter</RootNamespace>
+    <RootNamespace>PdfSorter</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UserSecretsId>97beb980-44d6-4036-bb28-01451af5221c</UserSecretsId>

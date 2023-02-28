@@ -2,8 +2,8 @@
 using Amazon.S3;
 using CsvHelper.Configuration;
 using Microsoft.Extensions.Configuration;
-using pdf_sorter.AWS;
-using pdf_sorter.Data;
+using PdfSorter.AWS;
+using PdfSorter.Data;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -13,7 +13,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace pdf_sorter
+namespace PdfSorter
 {
     internal class Setup
     {

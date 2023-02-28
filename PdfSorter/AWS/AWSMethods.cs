@@ -2,7 +2,7 @@
 using Amazon.S3.Model;
 
 
-namespace pdf_sorter.AWS
+namespace PdfSorter.AWS
 {
     /// <summary>
     /// This class is convenient since we are only working with one bucket through one client.

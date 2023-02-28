@@ -1,8 +1,8 @@
 ﻿using Amazon.S3.Model;
 using CsvHelper;
 using Microsoft.EntityFrameworkCore;
-using pdf_sorter;
-using pdf_sorter.Data;
+using PdfSorter;
+using PdfSorter.Data;
 using Serilog;
 using System.IO.Compression;
 

@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace pdf_sorter.Data
+namespace PdfSorter.Data
 {
     public class ProcessedFile
     {

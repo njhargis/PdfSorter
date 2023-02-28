@@ -7,23 +7,16 @@ PDF Sorter is a C#/.NET Codebase that:
 
 ## Prerequisites
  - [.NET 7 SDK](https://dotnet.microsoft.com/en-us/download)
- - Docker client 18.03 or later
-    - Linux distributions
-        - [CentOS](https://docs.docker.com/install/linux/docker-ce/centos/)
-        - [Debian](https://docs.docker.com/install/linux/docker-ce/debian/)
-        - [Fedora](https://docs.docker.com/install/linux/docker-ce/fedora/)
-        - [Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
-    - [macOS](https://docs.docker.com/desktop/mac/install/)
-    - [Windows](https://docs.docker.com/desktop/install/windows-install/)
 
 ## Running locally
+ - Override the values in appsettings.json using your 'User Secrets' file for the project to contain accurate AWSInfo.
+    - Within Visual Studio on Windows, right click the project and hit 'Manage User Secrets'.
  - Navigate to the project folder (e.g./pdf-sorter/pdf-sorter)
  - Run the following command to build and run the app locally:
 
    ```bash
    dotnet run
    ```
-
 ## Usage
 
 
@@ -31,3 +24,4 @@ PDF Sorter is a C#/.NET Codebase that:
 [AWS SDK S3 Examples](https://docs.aws.amazon.com/sdk-for-net/v3/developer-guide/csharp_s3_code_examples.html)  
 [.NET Core Configuration](https://learn.microsoft.com/en-us/dotnet/core/extensions/configuration)  
 [SQLite](https://www.sqlite.org/index.html)  
+[User Secrets Guide](https://learn.microsoft.com/en-us/aspnet/core/security/app-secrets?view=aspnetcore-7.0&tabs=windows#secret-manager)  

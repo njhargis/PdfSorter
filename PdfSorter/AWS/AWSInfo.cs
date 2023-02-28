@@ -1,4 +1,4 @@
-﻿namespace pdf_sorter.AWS
+﻿namespace PdfSorter.AWS
 {
     internal class AWSInfo
     {

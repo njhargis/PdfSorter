@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace pdf_sorter.Migrations
+namespace PdfSorter.Migrations
 {
     /// <inheritdoc />
     public partial class Init : Migration

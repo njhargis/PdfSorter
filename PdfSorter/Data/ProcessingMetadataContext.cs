@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace pdf_sorter.Data
+namespace PdfSorter.Data
 {
     public class ProcessingMetadataContext : DbContext
     {

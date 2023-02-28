@@ -1,6 +1,6 @@
 ﻿using CsvHelper.Configuration.Attributes;
 
-namespace pdf_sorter.Data
+namespace PdfSorter.Data
 {
 
     /// <summary>
