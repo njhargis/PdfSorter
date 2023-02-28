@@ -104,9 +104,10 @@ namespace PdfSorter.AWS
         /// <summary>
         /// This method uploads a file to the S3 bucket using the given key.
         /// </summary>
-        /// <param name="filePath"></param>
-        /// <param name="keyName"></param>
-        /// <returns></returns>
+        /// <param name="filePath">The path of the file to upload.</param>
+        /// <param name="keyName">The key to use in S3 bucket for this file.</param>
+        /// <returns>A boolean value indicating the success or failure of the
+        /// upload process</returns>
         public async Task<bool> UploadFileAsync(string filePath, string keyName)
         {
             try

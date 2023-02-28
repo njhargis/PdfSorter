@@ -204,7 +204,15 @@ foreach (var file in new DirectoryInfo(path).EnumerateFiles())
 Log.Information("Finished processing!");
 
 
-async Task<ProcessedZip> CreateOrUpdateZipFile(string zipPath, List<ProcessedZip> processedZips, ProcessEvent processEvent, ProcessingMetadataContext context)
+/// <summary>
+/// This method creates or updates a zip file in context.
+/// </summary>
+/// <param name="zipPath">The path to the zip file.</param>
+/// <param name="processedZips">A list of zip files already processed.</param>
+/// <param name="processEvent">The entity for the current event.</param>
+/// <param name="context">The processing metadata database context.</param>
+/// <returns>The created processed zip file.</returns>
+static async Task<ProcessedZip> CreateOrUpdateZipFile(string zipPath, List<ProcessedZip> processedZips, ProcessEvent processEvent, ProcessingMetadataContext context)
 {
     // If we've previously processed this zip, update it as being re-run.
     // Or it is the first time we've processed it, so create our entity
@@ -231,6 +239,12 @@ async Task<ProcessedZip> CreateOrUpdateZipFile(string zipPath, List<ProcessedZip
     return processedZip;
 }
 
+/// <summary>
+/// This method creates a "map" of PO numbers to attachments.
+/// </summary>
+/// <param name="csvFile">A zip entry correlating to a CSV file.</param>
+/// <param name="csvConfiguration">The configuration to use while reading the CSV.</param>
+/// <returns>A dictionary of PO numbers that has attachment names associated.</returns>
 static Dictionary<string, List<string>> GetMappingsFromCsv(ZipArchiveEntry csvFile, CsvConfiguration csvConfiguration)
 {
     // Assumptions:
@@ -242,12 +256,11 @@ static Dictionary<string, List<string>> GetMappingsFromCsv(ZipArchiveEntry csvFi
     using StreamReader reader = new(stream);
     using CsvReader csv = new(reader, csvConfiguration);
     {
-        // TODO: Handle if mapping fails for an individual file.
-        // TODO: Handle if PO Number is null/empty?
         IEnumerable<ExtractDataRaw> records = csv.GetRecords<ExtractDataRaw>();
         records = records.OrderBy(r => r.PONumber);
         foreach (ExtractDataRaw record in records)
         {
+            // Attachments is comma delimited, even though the "csv" is ~ delimited.
             string[] attachments = record.AttachmentList.Split(',');
 
 
