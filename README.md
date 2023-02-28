@@ -18,10 +18,11 @@ PDF Sorter is a C#/.NET Codebase that:
    dotnet run
    ```
 ## Usage
-
+If you'd like to change the database schema, you'll need to write an up/down migration for the existing SQLite file.
 
 ## Reference Materials
 [AWS SDK S3 Examples](https://docs.aws.amazon.com/sdk-for-net/v3/developer-guide/csharp_s3_code_examples.html)  
 [.NET Core Configuration](https://learn.microsoft.com/en-us/dotnet/core/extensions/configuration)  
 [SQLite](https://www.sqlite.org/index.html)  
 [User Secrets Guide](https://learn.microsoft.com/en-us/aspnet/core/security/app-secrets?view=aspnetcore-7.0&tabs=windows#secret-manager)  
+[Migrations in EF Core](https://learn.microsoft.com/en-us/ef/core/managing-schemas/migrations/?tabs=dotnet-core-cli)
