@@ -69,6 +69,8 @@ List<S3Object>? filesInBucket = await awsMethods.GetListOfAWSObjectsAsync();
 // If there were no files in the bucket no need to continue.
 if (filesInBucket != null && filesInBucket.Any())
 {
+    // This would be fairly significantly improved if we had a guaranteed
+    // prefix for the .zip files to pass to ListObjectsV2Async
     filesInBucket = filesInBucket.Where(f => f.Key.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)).ToList();
     Log.Debug("Seeing if we need to download files from AWS...");
     foreach (S3Object obj in filesInBucket)

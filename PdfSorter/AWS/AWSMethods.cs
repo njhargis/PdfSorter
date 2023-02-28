@@ -57,7 +57,7 @@ namespace PdfSorter.AWS
 
                 return listObjects;
             }
-            // TODO: Handle 404 differently than other errors.
+            // TODO: Possible improvement if we handle 404 differently than other errors.
             catch (AmazonS3Exception ex)
             {
                 Log.Error($"GetListOfAWSObjectsAsync: Error accessing bucket items: {ex.Message}");
@@ -102,11 +102,10 @@ namespace PdfSorter.AWS
         }
 
         /// <summary>
-        /// This method checks if a file exists (or is accessible) on a S3 bucket using the current client.
-        /// Optionally accept a versionId to check that specific version.
+        /// This method uploads a file to the S3 bucket using the given key.
         /// </summary>
-        /// <param name="fileName"></param>
-        /// <param name="versionId"></param>
+        /// <param name="filePath"></param>
+        /// <param name="keyName"></param>
         /// <returns></returns>
         public async Task<bool> UploadFileAsync(string filePath, string keyName)
         {
