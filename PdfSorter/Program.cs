@@ -69,6 +69,7 @@ List<S3Object>? filesInBucket = await awsMethods.GetListOfAWSObjectsAsync();
 // If there were no files in the bucket no need to continue.
 if (filesInBucket != null && filesInBucket.Any())
 {
+    filesInBucket = filesInBucket.Where(f => f.Key.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)).ToList();
     Log.Debug("Seeing if we need to download files from AWS...");
     foreach (S3Object obj in filesInBucket)
     {
@@ -96,99 +97,109 @@ if (filesInBucket != null && filesInBucket.Any())
     List<string>? downloadedZipPaths = Directory.GetFiles(path).Where(f => f.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)).ToList();
 
     if (downloadedZipPaths != null && downloadedZipPaths.Any())
-    {
+    { 
         foreach (string zipPath in downloadedZipPaths)
         {
-            ProcessedZip processedZip = await CreateOrUpdateZipFile(zipPath, alreadyProcessedZips, processEvent, context);
-
-            // Within each Zip file.
-            using ZipArchive archive = ZipFile.OpenRead(zipPath);
-            // Find the mapping CSV file.
-            // TODO: Edge case, if there is more than 1 CSV we will not capture that.
-            ZipArchiveEntry? csvFile = archive.Entries.Where(e => e.FullName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-
-            if (csvFile != null) 
+            try 
             {
-                Dictionary<string, List<string>> fileMatchToPo = GetMappingsFromCsv(csvFile, setup.CsvConfig);
+                ProcessedZip processedZip = await CreateOrUpdateZipFile(zipPath, alreadyProcessedZips, processEvent, context);
 
-                Log.Debug($"{fileMatchToPo.Count} PO Numbers being tracked for file {csvFile.FullName}");
+                // Within each Zip file.
+                using ZipArchive archive = ZipFile.OpenRead(zipPath);
+                // Find the mapping CSV file.
+                // TODO: Edge case, if there is more than 1 CSV we will not capture that.
+                ZipArchiveEntry? csvFile = archive.Entries.Where(e => e.FullName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
 
-                // For each pdf file in the zip file.
-                foreach (ZipArchiveEntry entry in archive.Entries.Where(e => e.FullName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)))
+                if (csvFile != null)
                 {
-                    // If we've already processed the file, don't do it again.
-                    if (!alreadyProcessedFiles.Contains(entry.FullName))
+                    Dictionary<string, List<string>> fileMatchToPo = GetMappingsFromCsv(csvFile, setup.CsvConfig);
+
+                    Log.Debug($"{fileMatchToPo.Count} PO Numbers being tracked for file {csvFile.FullName}");
+
+                    // For each pdf file in the zip file.
+                    foreach (ZipArchiveEntry entry in archive.Entries.Where(e => e.FullName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)))
                     {
-                        try
+                        // If we've already processed the file, don't do it again.
+                        if (!alreadyProcessedFiles.Contains(entry.FullName))
                         {
-                            string poNum = fileMatchToPo.Where(f => f.Value.Contains(entry.FullName)).FirstOrDefault().Key;
-                            if (!Directory.Exists($"/data/by-po/" + poNum))
+                            try
                             {
-                                Directory.CreateDirectory($"/data/by-po/" + poNum);
-                            }
-                            if (poNum != string.Empty)
-                            {
-                                ProcessedFile processedFile = new()
+                                string poNum = fileMatchToPo.Where(f => f.Value.Contains(entry.FullName)).FirstOrDefault().Key;
+                                if (poNum != string.Empty)
                                 {
-                                    FileName = entry.FullName,
-                                    ProcessedZipId = processedZip.Id,
-                                    PONumber = poNum
-                                };
+                                    var pathToSave = $"{path}/by-po/{poNum}/";
+                                    Directory.CreateDirectory(pathToSave);
 
-                                processedZip.LastUpdateDateTime = DateTime.UtcNow;
+                                    ProcessedFile processedFile = new()
+                                    {
+                                        FileName = entry.FullName,
+                                        ProcessedZipId = processedZip.Id,
+                                        PONumber = poNum
+                                    };
 
-                                var filePath = $"by-po/" + poNum + "/" + entry.FullName;
+                                    processedZip.LastUpdateDateTime = DateTime.UtcNow;
 
-                                entry.ExtractToFile(filePath);
+                                    entry.ExtractToFile(pathToSave + entry.FullName);
 
-                                //await awsMethods.UploadFileAsync(filePath, filePath);
+                                    await awsMethods.UploadFileAsync(pathToSave + entry.FullName, $"by-po/{poNum}/{entry.FullName}");
 
-                                // TODO: If we fail to write metadata should we "rollback" the file move?
-                                try
-                                {
-                                    context.ProcessedFiles.Add(processedFile);
-                                    context.ProcessedZips.Update(processedZip);
-                                    await context.SaveChangesAsync();
-                                    // Don't forget to add it to our list of existing entries we're tracking!
-                                    alreadyProcessedFiles.Add(entry.FullName);
+                                    // TODO: If we fail to write metadata should we "rollback" the file move?
+                                    try
+                                    {
+                                        context.ProcessedFiles.Add(processedFile);
+                                        context.ProcessedZips.Update(processedZip);
+                                        await context.SaveChangesAsync();
+                                        // Don't forget to add it to our list of existing entries we're tracking!
+                                        alreadyProcessedFiles.Add(entry.FullName);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Log.Error(ex.ToString());
+                                    }
                                 }
-                                catch (Exception ex)
+                                // TODO: What to do with these?
+                                else
                                 {
-                                    Log.Error(ex.ToString());
+                                    Log.Warning($"No PO found for {entry.FullName} in {zipPath}.");
                                 }
                             }
-                            // TODO: What to do with these?
-                            else
+                            catch (IOException ex)
                             {
-                                Log.Warning($"No PO found for {entry.FullName} in {zipPath}.");
+                                Log.Error($"Could not write {entry.FullName}. Exception: {ex.Message}");
                             }
-                        }
-                        catch (IOException ex)
-                        {
-                            Log.Error($"Could not write {entry.FullName}. Exception: {ex.Message}");
                         }
                     }
                 }
+                else
+                {
+                    Log.Error($"There is no .csv file within file: {processedZip.FileName}");
+                }
             }
-            else
+            // Catching this will prevent us from bombing out mid process for one file.
+            catch (Exception ex)
             {
-                Log.Error($"There is no .csv file within file: {processedZip.FileName}");
-            }            
-        }
+                Log.Error($"Something went wrong processing {zipPath}", ex);
+            }
     }
+}
 }
 
 // Cleanup.
 processEvent.CompleteTime = DateTime.UtcNow;
 context.ProcessEvents.Update(processEvent);
 await context.SaveChangesAsync();
+await context.DisposeAsync();
+
+
+await awsMethods.UploadFileAsync(path + setup.DatabaseFileName, setup.DatabaseFileName);
+
 
 foreach (var file in new DirectoryInfo(path).EnumerateFiles())
 {
     file.Delete();
 }
 
-Log.Information("Finishing process!");
+Log.Information("Finished processing!");
 
 
 async Task<ProcessedZip> CreateOrUpdateZipFile(string zipPath, List<ProcessedZip> processedZips, ProcessEvent processEvent, ProcessingMetadataContext context)

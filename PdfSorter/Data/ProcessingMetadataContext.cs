@@ -19,7 +19,7 @@ namespace PdfSorter.Data
         // passed in path from constructor.
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         { 
-            options.UseSqlite($"Data Source={DbPath}");
+            options.UseSqlite($"Data Source={DbPath};Pooling=False");
 
         }
         
