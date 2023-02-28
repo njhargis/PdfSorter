@@ -1,6 +1,7 @@
 ﻿using Amazon.S3;
 using Amazon.S3.Model;
-
+using Amazon.S3.Transfer;
+using Serilog;
 
 namespace PdfSorter.AWS
 {
@@ -11,6 +12,7 @@ namespace PdfSorter.AWS
     {
         private readonly IAmazonS3 _client;
         private readonly string _bucketName;
+        private readonly TransferUtility _transferUtility;
 
         /// <summary>
         /// The constructor for this class takes the client and bucket to use for all the methods.
@@ -21,6 +23,7 @@ namespace PdfSorter.AWS
         {
             _client = client;
             _bucketName = bucketName;
+            _transferUtility = new TransferUtility(_client);
         }
 
         /// <summary>
@@ -57,7 +60,7 @@ namespace PdfSorter.AWS
             // TODO: Handle 404 differently than other errors.
             catch (AmazonS3Exception ex)
             {
-                Console.WriteLine($"Error accessing bucket items: {ex.Message}");
+                Log.Error($"GetListOfAWSObjectsAsync: Error accessing bucket items: {ex.Message}");
                 return null;
             }
         }
@@ -93,7 +96,7 @@ namespace PdfSorter.AWS
             }
             catch (AmazonS3Exception ex)
             {
-                Console.WriteLine($"Error saving {objectName}: {ex.Message}");
+                Log.Error($"DownloadObjectFromBucketAsync: Error downloading {objectName}: {ex.Message}");
                 return false;
             }
         }
@@ -105,24 +108,16 @@ namespace PdfSorter.AWS
         /// <param name="fileName"></param>
         /// <param name="versionId"></param>
         /// <returns></returns>
-        public async Task<bool> IsS3FileExists(string fileName, string? versionId = null)
+        public async Task<bool> UploadFileAsync(string filePath, string keyName)
         {
             try
             {
-                var request = new GetObjectMetadataRequest()
-                {
-                    BucketName = _bucketName,
-                    Key = fileName,
-                    VersionId = !string.IsNullOrEmpty(versionId) ? versionId : null
-                };
-
-                var response = await _client.GetObjectMetadataAsync(request);
-
+                await _transferUtility.UploadAsync(filePath, _bucketName, keyName);
                 return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"IsFileExists: Error during checking if {fileName} exists in s3 bucket: {ex.Message}");
+                Log.Error($"UploadFileAsync: Error attempting to upload {keyName} to s3 bucket: {ex.Message}");
                 return false;
             }
         }

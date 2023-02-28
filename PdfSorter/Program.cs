@@ -1,6 +1,7 @@
 ﻿using Amazon.S3;
 using Amazon.S3.Model;
 using CsvHelper;
+using CsvHelper.Configuration;
 using Microsoft.EntityFrameworkCore;
 using PdfSorter;
 using PdfSorter.AWS;
@@ -14,6 +15,7 @@ ProcessingMetadataContext context;
 AWSMethods awsMethods;
 string path;
 
+// Try to initialize (get configurations, aws methods, local folders created).
 try
 {
     Log.Debug("Initializing...");
@@ -21,8 +23,8 @@ try
     awsMethods = setup.AwsMethods;
     path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + $"/PdfSorterData/";
     // Does not need to check for existence first.
-    var dir = Directory.CreateDirectory(path);
-    foreach(FileInfo file in dir.EnumerateFiles())
+    DirectoryInfo dir = Directory.CreateDirectory(path);
+    foreach (FileInfo file in dir.EnumerateFiles())
     {
         file.Delete();
     }
@@ -34,6 +36,7 @@ catch (Exception ex)
     throw new PdfSorterSetupFailedException(ex.Message, ex);
 }
 
+// Try to download the most recent DB file, if none exists create a new one.
 try
 {
     await awsMethods.DownloadObjectFromBucketAsync(setup.DatabaseFileName, path);
@@ -57,8 +60,8 @@ context.ProcessEvents.Add(processEvent);
 await context.SaveChangesAsync();
 
 // These variables contains previously processed zips/files.
-ProcessedZip[]? alreadyProcessedZips = await context.ProcessedZips.ToArrayAsync();
-ProcessedFile[]? alreadyProcessedFiles = await context.ProcessedFiles.ToArrayAsync();
+List<ProcessedZip> alreadyProcessedZips = await context.ProcessedZips.ToListAsync();
+List<string> alreadyProcessedFiles = await context.ProcessedFiles.Select(p => p.FileName).ToListAsync();
 
 // Get the list of existing objects.
 List<S3Object>? filesInBucket = await awsMethods.GetListOfAWSObjectsAsync();
@@ -66,7 +69,7 @@ List<S3Object>? filesInBucket = await awsMethods.GetListOfAWSObjectsAsync();
 // If there were no files in the bucket no need to continue.
 if (filesInBucket != null && filesInBucket.Any())
 {
-    Log.Debug("Downloading files from AWS...");
+    Log.Debug("Seeing if we need to download files from AWS...");
     foreach (S3Object obj in filesInBucket)
     {
         // Only need to download it locally we've never seen it or
@@ -94,81 +97,30 @@ if (filesInBucket != null && filesInBucket.Any())
 
     if (downloadedZipPaths != null && downloadedZipPaths.Any())
     {
-        // TODO: There is an edge case here where we don't redownload it but it still exists in the dir somehow?
         foreach (string zipPath in downloadedZipPaths)
         {
-            // If we've previously processed this zip, update it as being re-run.
-            // Or it is the first time we've processed it, so create our entity
-            // for tracking the zip file so we can associate pdfs with it.
-            ProcessedZip? processedZip = alreadyProcessedZips.Where(a => a.FileName == zipPath[(zipPath.LastIndexOf('/') + 1)..]).FirstOrDefault();
-            if (processedZip != null)
-            {
-                Log.Debug($"{processedZip.FileName} has been previously processed. Updating it.");
-                processedZip.LastUpdateDateTime = DateTime.UtcNow;
-                processedZip.LastUpdateProcessEventId = processEvent.Id;
-            }
-            else
-            {
-                processedZip = new()
-                {
-                    FileName = zipPath[(zipPath.LastIndexOf('/') + 1)..],
-                    OriginalProcessEventId = processEvent.Id,
-                };
-                Log.Debug($"{processedZip.FileName} has not been previously processed. creating it.");
-                context.ProcessedZips.Add(processedZip);
-            }
-            await context.SaveChangesAsync();
+            ProcessedZip processedZip = await CreateOrUpdateZipFile(zipPath, alreadyProcessedZips, processEvent, context);
 
             // Within each Zip file.
             using ZipArchive archive = ZipFile.OpenRead(zipPath);
-
             // Find the mapping CSV file.
+            // TODO: Edge case, if there is more than 1 CSV we will not capture that.
             ZipArchiveEntry? csvFile = archive.Entries.Where(e => e.FullName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
 
             if (csvFile != null) 
             {
-                // Assumptions:
-                // 1) Every .zip file is "self contained", in that the mapping csv record
-                // for every file in a ZIP is in the same ZIP.
-                // 2) There is exactly 1 csv per zip.
-                Dictionary<string, List<string>> fileMatchToPo = new();
-                using Stream stream = csvFile.Open();
-                using StreamReader reader = new(stream);
-                using CsvReader csv = new(reader, setup.CsvConfig);
-                {
-                    // TODO: Handle if mapping fails for an individual file.
-                    // TODO: Handle if PO Number is null/empty?
-                    IEnumerable<ExtractDataRaw> records = csv.GetRecords<ExtractDataRaw>();
-                    records.OrderBy(r => r.PONumber);
-                    foreach (ExtractDataRaw record in records)
-                    {
-                        string[] attachments = record.AttachmentList.Split(',');
+                Dictionary<string, List<string>> fileMatchToPo = GetMappingsFromCsv(csvFile, setup.CsvConfig);
 
-
-                        if (!fileMatchToPo.ContainsKey(record.PONumber))
-                        {
-                            fileMatchToPo.Add(record.PONumber, new List<string>());
-                        }
-
-                        foreach (string attachmentPath in attachments)
-                        {
-                            var attachment = attachmentPath[(attachmentPath.LastIndexOf('/') + 1)..];
-                            // Add this file with the PO to our dict.
-                            fileMatchToPo[record.PONumber].Add(attachment);
-                        }
-                    }
-                }
-                Log.Debug($"{fileMatchToPo.Count()} PO Numbers being tracked for file {csvFile.FullName}");
+                Log.Debug($"{fileMatchToPo.Count} PO Numbers being tracked for file {csvFile.FullName}");
 
                 // For each pdf file in the zip file.
                 foreach (ZipArchiveEntry entry in archive.Entries.Where(e => e.FullName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)))
                 {
                     // If we've already processed the file, don't do it again.
-                    if (!alreadyProcessedFiles.Select(f => f.FileName).Contains(entry.FullName))
+                    if (!alreadyProcessedFiles.Contains(entry.FullName))
                     {
                         try
                         {
-                            // What if this doesn't find a match?
                             string poNum = fileMatchToPo.Where(f => f.Value.Contains(entry.FullName)).FirstOrDefault().Key;
                             if (!Directory.Exists($"/data/by-po/" + poNum))
                             {
@@ -185,7 +137,11 @@ if (filesInBucket != null && filesInBucket.Any())
 
                                 processedZip.LastUpdateDateTime = DateTime.UtcNow;
 
-                                entry.ExtractToFile($"/data/by-po/" + poNum + "/" + entry.FullName);
+                                var filePath = $"by-po/" + poNum + "/" + entry.FullName;
+
+                                entry.ExtractToFile(filePath);
+
+                                //await awsMethods.UploadFileAsync(filePath, filePath);
 
                                 // TODO: If we fail to write metadata should we "rollback" the file move?
                                 try
@@ -193,16 +149,18 @@ if (filesInBucket != null && filesInBucket.Any())
                                     context.ProcessedFiles.Add(processedFile);
                                     context.ProcessedZips.Update(processedZip);
                                     await context.SaveChangesAsync();
+                                    // Don't forget to add it to our list of existing entries we're tracking!
+                                    alreadyProcessedFiles.Add(entry.FullName);
                                 }
                                 catch (Exception ex)
                                 {
-                                    Console.WriteLine(ex.ToString());
+                                    Log.Error(ex.ToString());
                                 }
                             }
-                            // What to do with these?
+                            // TODO: What to do with these?
                             else
                             {
-                                Console.WriteLine($"No PO found for {entry.FullName} in {zipPath}.");
+                                Log.Warning($"No PO found for {entry.FullName} in {zipPath}.");
                             }
                         }
                         catch (IOException ex)
@@ -220,6 +178,78 @@ if (filesInBucket != null && filesInBucket.Any())
     }
 }
 
+// Cleanup.
 processEvent.CompleteTime = DateTime.UtcNow;
 context.ProcessEvents.Update(processEvent);
 await context.SaveChangesAsync();
+
+foreach (var file in new DirectoryInfo(path).EnumerateFiles())
+{
+    file.Delete();
+}
+
+Log.Information("Finishing process!");
+
+
+async Task<ProcessedZip> CreateOrUpdateZipFile(string zipPath, List<ProcessedZip> processedZips, ProcessEvent processEvent, ProcessingMetadataContext context)
+{
+    // If we've previously processed this zip, update it as being re-run.
+    // Or it is the first time we've processed it, so create our entity
+    // for tracking the zip file so we can associate pdfs with it.
+    ProcessedZip? processedZip = processedZips.Where(a => a.FileName == zipPath[(zipPath.LastIndexOf('/') + 1)..]).FirstOrDefault();
+    if (processedZip != null)
+    {
+        Log.Debug($"{processedZip.FileName} has been previously processed. Updating it.");
+        processedZip.LastUpdateDateTime = DateTime.UtcNow;
+        processedZip.LastUpdateProcessEventId = processEvent.Id;
+    }
+    else
+    {
+        processedZip = new()
+        {
+            FileName = zipPath[(zipPath.LastIndexOf('/') + 1)..],
+            OriginalProcessEventId = processEvent.Id,
+            LastUpdateProcessEventId = processEvent.Id
+        };
+        Log.Debug($"{processedZip.FileName} has not been previously processed. creating it.");
+        context.ProcessedZips.Add(processedZip);
+        await context.SaveChangesAsync();
+    }
+    return processedZip;
+}
+
+static Dictionary<string, List<string>> GetMappingsFromCsv(ZipArchiveEntry csvFile, CsvConfiguration csvConfiguration)
+{
+    // Assumptions:
+    // 1) Every .zip file is "self contained", in that the mapping csv record
+    // for every file in a ZIP is in the same ZIP.
+    // 2) There is exactly 1 csv per zip.
+    Dictionary<string, List<string>> fileMatchToPo = new();
+    using Stream stream = csvFile.Open();
+    using StreamReader reader = new(stream);
+    using CsvReader csv = new(reader, csvConfiguration);
+    {
+        // TODO: Handle if mapping fails for an individual file.
+        // TODO: Handle if PO Number is null/empty?
+        IEnumerable<ExtractDataRaw> records = csv.GetRecords<ExtractDataRaw>();
+        records = records.OrderBy(r => r.PONumber);
+        foreach (ExtractDataRaw record in records)
+        {
+            string[] attachments = record.AttachmentList.Split(',');
+
+
+            if (!fileMatchToPo.ContainsKey(record.PONumber))
+            {
+                fileMatchToPo.Add(record.PONumber, new List<string>());
+            }
+
+            foreach (string attachmentPath in attachments)
+            {
+                var attachment = attachmentPath[(attachmentPath.LastIndexOf('/') + 1)..];
+                // Add this file with the PO to our dict.
+                fileMatchToPo[record.PONumber].Add(attachment);
+            }
+        }
+    }
+    return fileMatchToPo;
+}

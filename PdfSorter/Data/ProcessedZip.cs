@@ -7,7 +7,7 @@ namespace PdfSorter.Data
         public Guid Id { get; set; } = Guid.NewGuid();
         public required string FileName { get; set; }
         public required Guid OriginalProcessEventId { get; set; }
-        public Guid? LastUpdateProcessEventId { get; set; }
+        public required Guid LastUpdateProcessEventId { get; set; }
         public DateTime LastUpdateDateTime { get; set; } = DateTime.UtcNow;
 
         public ICollection<ProcessedFile> ProcessedFiles { get; set; } = new HashSet<ProcessedFile>();
@@ -22,7 +22,7 @@ namespace PdfSorter.Data
         }
 
         private ProcessEvent? _lastUpdateProcessEvent;
-        public ProcessEvent? LastUpdateProcessEvent
+        public ProcessEvent LastUpdateProcessEvent
         {
             set => _lastUpdateProcessEvent = value;
             get => _lastUpdateProcessEvent ?? throw new InvalidOperationException("Uninitialized property: " + nameof(LastUpdateProcessEvent));
